@@ -1,1 +1,78 @@
 How to update a disconnected Red Hat Satellite Server
+-----------------------------------------------------
+
+
+Create Content View
+-------------------
+On the right-hand-side menu, mouse over "Content" and click on "Content Views".
+
+Change the Repository download policy to "Immediate"
+Clicking on the "Download Policy" dropdown menu and select "Immediate" and then click "Save".
+
+Export Content
+--------------
+#hammer content-view version list.
+#hammer content-export complete version --id 7
+
+Move Content to Disconnected Satellite Server
+---------------------------------------------
+In the previous step, the content view RHEL8_for_Export was exported to the directory  /var/lib/pulp/exports/Acme_Org/rhel8_example/1.0/2021-11-23T18-59-49-00-00/. 
+All the data contained in that directory must be moved to the disconnected Satellite server (on USB sticks, portable HDs, or any other portable media).
+
+Import Content
+-------------
+Copy the data from the connected Satellite server into the directory/var/lib/pulp/imports on the disconnected Satellite server. 
+It is important to make sure that the imported data is owned by the pulp user on the disconnected satellite server. In this example, the imported data is owned by the root user.
+Enter the command chown -R pulp:pulp (content to be imported).
+Now we’ll import the data. Enter the command hammer content-import version --organization-id=1 --path=/var/lib/pulp/imports/2021-11-23T18-59-49-00-00/.
+In the WebUI on the disconnected Satellite server, we can see that the content view has been imported.
+
+Update Content View
+--------------------
+To demonstrate an incremental update, we’ll update the content view on the connected Satellite server by removing the "Red Hat Ansible Engine 2.9 RPMs for Red Hat Enterprise Linux 7 Server x86_64" repository. 
+Then we’ll create a new version of the content view. Then we’ll perform an incremental update of the disconnected Satellite server with the new version of the "rhel8 example" content view. 
+We’ll navigate to the "rhel8 example" content view.
+
+Check the (1] "Red Hat Ansible Engine 2.9 RPMs for Red Hat Enterprise Linux 7 Server x86_64" repository then click (2) "Remove Repositories".
+Click on "Publish New Version".
+Click on "Save"
+A new version of the content view will be published.
+
+
+Export Increment of the Content View
+------------------------------------
+On the CLI of the Satellite server, enter the command hammer content-view version list.
+In this example, the ID of the second version of the "rhel8 example" content view is 8. 
+We’ll perform an incremental export of this content view with the command hammer content-export incremental version --id 8.
+If we compare the first full export with the second incremental export, there is a significant difference in size since we have removed an entire repository from the content view and there haven’t been any updates to the remaining  "Red Hat Satellite Tools 6.10" repository.
+
+
+Import Increment of the Content View
+------------------------------------
+The command to import an incremental update to the disconnected Satellite server is the same as a full update.
+On the disconnected Satellite server, we can see that version 2 of the "rhel8 example" content view contains only 10 packages and 1 errata compared to 61 packages and 27 errata in version 1.
+
+
+Chunking
+--------
+By default, a content export contains all the content in 3 files. 2 of these account for metadata and the third contains the content. If desired, the content file can be split up into "chunks" with the following command, using the flag --chunk-size-gb. This is useful for storing the exported content on smaller portable media. 
+hammer content-export complete version --id 12 --chunk-size-gb 1
+In this example, the content is split up into 1GB chunks.
+
+The process to import the chunked exports is the same as with un-chunked exports. See above in the section titled "Import Content". Remember to change the user and group ownership to the pulp user.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
